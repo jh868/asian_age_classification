@@ -115,12 +115,13 @@ def train(train_loader, valid_loader, epoch_num, model, device, criterion, optim
         accuracy_df.loc[epoch, 'Epoch'] = epoch
         accuracy_df.loc[epoch, 'Train Loss'] = round(train_average_loss, 3)
         accuracy_df.loc[epoch, 'Train Accuracy'] = round(train_accuracy, 3)
-        # accuracy_df.loc[epoch, 'Valid Loss'] = round(valid_average_loss, 3)
-        # accuracy_df.loc[epoch, 'Valid Accuracy'] = round(valid_accuracy, 3)
+        accuracy_df.loc[epoch, 'Valid Loss'] = round(valid_average_loss, 3)
+        accuracy_df.loc[epoch, 'Valid Accuracy'] = round(valid_accuracy, 3)
 
-        print('Epoch: [{:3d} / {:3d}]   Train Loss: {:.3f}   Train Accuracy: {:.3f}'.format(
-            epoch, epoch_num, train_average_loss, train_accuracy
-        ))
+        print(
+            'Epoch: [{:3d} / {:3d}]   Train Loss: {:.3f}   Train Accuracy: {:.3f}   Valid Loss: {:.3f}   Valid Accuracy: {:.3f}'.format(
+                epoch, epoch_num, train_average_loss, train_accuracy, valid_average_loss, valid_accuracy
+            ))
 
         if valid_accuracy > best_valid_accuracy:
             best_valid_accuracy = valid_accuracy
@@ -161,9 +162,9 @@ def validate(valid_loader, model, device, criterion):
 
 def test(test_loader, device, label_quantity):
     # Model call
-    model = timm.create_model('모델.pt', pretrained=True)
-    model.head = nn.Linear(in_features=768, out_features=12)
-    model.load_state_dict(torch.load('./{}_30_epoch.pt'.format(model._get_name()), map_location=device))
+    model = models.efficientnet_b0(weights='EfficientNet_B0_Weights.DEFAULT')
+    model.classifier[1] = nn.Linear(in_features=1280, out_features=label_quantity)
+    model.load_state_dict(torch.load('./{}_best.pt'.format(model._get_name()), map_location=device))
     model.to(device)
 
     correct = 0

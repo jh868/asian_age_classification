@@ -1,12 +1,11 @@
 import os
 import sys
 
-import numpy as np
 import pandas as pd
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, WeightedRandomSampler
+from torch.utils.data import DataLoader
 
 from torchvision import models
 
@@ -20,47 +19,48 @@ from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 import timm
 
-
 # Set Device
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # Set augmentations
 train_transforms = set_augmentations('train')
 valid_transforms = set_augmentations('valid')
+test_transforms = set_augmentations('valid')
 
 # Load Dataset
 dataset_path = os.path.join('./dataset')
 
 train_dataset = CustomDataset(dataset_path, task='train', transforms=train_transforms)
 valid_dataset = CustomDataset(dataset_path, task='val', transforms=valid_transforms)
-# test_dataset = CustomDataset(dataset_path, task='test', transforms=valid_transforms)
+test_dataset = CustomDataset(dataset_path, task='test', transforms=valid_transforms)
 
 # Set DataLoader
-train_loader = DataLoader(train_dataset, batch_size=60, shuffle=True, num_workers=4, pin_memory=True)
-valid_loader = DataLoader(valid_dataset, batch_size=60, shuffle=False, num_workers=4, pin_memory=True)
-# test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=4, pin_memory=True)
+train_loader = DataLoader(train_dataset, batch_size=40, shuffle=True, num_workers=4, pin_memory=True)
+valid_loader = DataLoader(valid_dataset, batch_size=40, shuffle=False, num_workers=4, pin_memory=True)
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=4, pin_memory=True)
 # print(len(train_dataset), '##', len(train_loader))
 # exit()
 
 # Call model
-label_quantity = 12
-model = models.efficientnet_b5(weights='EfficientNet_B5_Weights.DEFAULT')
-model.classifier[1] = nn.Linear(in_features=2048, out_features=label_quantity)
+label_quantity = 10
+model = models.efficientnet_b0(weights='EfficientNet_B0_Weights.DEFAULT')
+model.classifier[1] = nn.Linear(in_features=1280, out_features=label_quantity)
+# print(model)
 model.to(device)
 # print(model._get_name())
 # exit()
 
 # Set parameters
 criterion = LabelSmoothingCrossEntropy()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 epoch_num = 20
 
 if __name__ == '__main__':
     # Train and validate
-    train(train_loader, epoch_num, model, device, criterion, optimizer, scheduler)
+    # train(train_loader, valid_loader, epoch_num, model, device, criterion, optimizer, scheduler)
 
     # Save last.pt
-    torch.save(model.state_dict(), './last.pt')
+    # torch.save(model.state_dict(), './last.pt')
 
-    # test(test_loader, device, label_quantity)
+    test(test_loader, device, label_quantity)
